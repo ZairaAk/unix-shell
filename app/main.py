@@ -12,7 +12,7 @@ def main():
 
         if command.startswith("echo "):
             print(command[5:])
-        print(f"{command}: command not found")
+        # print(f"{command}: command not found")
     pass
 
 
