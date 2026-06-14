@@ -13,7 +13,9 @@ def main():
         if command.startswith("echo "):
             print(command[5:])
             continue
-        
+        if(command.startswith("type ")):
+            print("command[5:] is type(command[5:])")
+
         print(f"{command}: command not found")
     pass
 
