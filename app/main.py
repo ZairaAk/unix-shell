@@ -14,7 +14,7 @@ def main():
             print(command[5:])
             continue
         if(command.startswith("type ")):
-            print("command[5:] is type(command[5:])")
+            print(command[5:] " is a "type(command[5:]))
 
         print(f"{command}: command not found")
     pass
