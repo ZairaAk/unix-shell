@@ -21,7 +21,7 @@ def main():
             else:
                 path=shutil.which(target)
                 if path:
-                    print(f"{target}: is {path}")  
+                    print(f"{target} is {path}")  
                 else:
                     print("f{target}: not found")
         else:    
