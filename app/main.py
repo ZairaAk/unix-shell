@@ -1,4 +1,4 @@
-import sys,os,shutil,subprocess
+import sys,os,shutil,subprocess,shlex
 
 
 def main():
@@ -6,6 +6,17 @@ def main():
     while True:
         sys.stdout.write("$ ")
         command=input()
+
+        if not command.strip():
+            continue
+
+        try:
+            command_parts = shlex.split(command)
+        except ValueError:
+            continue
+
+        if not command_parts:
+            continue
 
         if command=="exit":
             break
