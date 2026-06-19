@@ -16,7 +16,7 @@ def main():
 
         if command.startswith("type "):
             target=command[5:]
-            if target in["echo","exit","type"]
+            if target in["echo","exit","type"]:
                 print(f"{target} is a shell builtin")
             else:
                 print(f"{target}: not found")  
