@@ -17,10 +17,19 @@ def main():
             print(os.getcwd())          
             continue
 
+        if command.startswith("cd "):
+            target=command[3:]
+            try:
+                os.chdir(target)
+            except FileNotFoundError:
+                print(f"cd: {target}: No such file or directory")
+            continue
+
+
 
         if command.startswith("type "):
             target=command[5:]
-            if target in["echo","exit","type","pwd"]:
+            if target in["echo","exit","type","pwd","cd"]:
                 print(f"{target} is a shell builtin")
             else:
                 path=shutil.which(target)
