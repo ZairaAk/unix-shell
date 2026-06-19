@@ -20,9 +20,8 @@ def main():
                 print(f"{target} is a shell builtin")
             else:
                 print(f"{target}: not found")  
-
-
-        #print(f"{command}: command not found")
+        else:    
+            print(f"{command}: command not found")
     pass
 
 
