@@ -19,8 +19,12 @@ def main():
 
         if command.startswith("cd "):
             target=command[3:]
+            if target=="~":
+                os.environ.get(target)
+
             try:
                 os.chdir(target)
+
             except FileNotFoundError:
                 print(f"cd: {target}: No such file or directory")
             continue
