@@ -17,7 +17,7 @@ def main():
 
         if command.startswith("type "):
             target=command[5:]
-            if target in["echo","exit","type"]:
+            if target in["echo","exit","type","pwd"]:
                 print(f"{target} is a shell builtin")
             else:
                 path=shutil.which(target)
