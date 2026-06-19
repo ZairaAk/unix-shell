@@ -25,7 +25,11 @@ def main():
                     print(f"{target} is {path}") 
                 else:
                         print(f"{target}: not found")
-            continue             
+            continue   
+        
+        if command=="pwd":
+            path=shutil.which(command)
+            print(path)          
         
         command_parts=command.split()
         if not command_parts:
@@ -41,9 +45,7 @@ def main():
             print(f"{command}: not found")
 
 
-        if command=="pwd":
-            path=shutil.which(command)
-            print(path)
+        
 
 
         # else:    
