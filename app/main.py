@@ -40,6 +40,12 @@ def main():
         else:
             print(f"{command}: not found")
 
+
+        if command=="pwd":
+            path=shutil.which(command)
+            print(path)
+
+
         # else:    
         #     print(f"{command}: command not found")
     pass
