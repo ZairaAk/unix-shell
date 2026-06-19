@@ -13,6 +13,9 @@ def main():
         if command.startswith("echo "):
             print(command[5:])
             continue
+        if command=="pwd":            
+            print(os.getcwd())          
+            continue
 
 
         if command.startswith("type "):
@@ -26,10 +29,7 @@ def main():
                 else:
                         print(f"{target}: not found")
             continue   
-        
-        if command=="pwd":
-            path=shutil.which(command)
-            print(path)          
+
         
         command_parts=command.split()
         if not command_parts:
