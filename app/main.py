@@ -25,7 +25,7 @@ def main():
                     print(f"{target} is {path}") 
                 else:
                         print(f"{target}: not found")
-                continue             
+            continue             
         
         command_parts=command.split()
         if not command_parts:
