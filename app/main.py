@@ -2,7 +2,6 @@ import sys
 
 
 def main():
-    # TODO: Uncomment the code below to pass the first stage
 
     while True:
         sys.stdout.write("$ ")
@@ -13,8 +12,15 @@ def main():
         if command.startswith("echo "):
             print(command[5:])
             continue
-        if(command.startswith("type ")):
-            print(command[5:] " is a "type(command[5:]))
+
+
+        if command.startswith("type "):
+            target=command[5:]
+            if target in["echo","exit","type"]
+                print(f"{target} is a shell builtin")
+            else:
+                print(f"{target}: not found")  
+
 
         print(f"{command}: command not found")
     pass
