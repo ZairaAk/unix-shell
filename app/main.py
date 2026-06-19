@@ -18,18 +18,24 @@ def main():
         if not command_parts:
             continue
 
-        if command=="exit":
+        program_name = command_parts[0]
+        args = command_parts[1:]
+
+        if program_name=="exit":
             break
 
-        if command.startswith("echo "):
-            print(command[5:])
+        if program_name=="echo":
+            print(" ".join(args))
             continue
-        if command=="pwd":            
+        if program_name=="pwd":            
             print(os.getcwd())          
             continue
 
-        if command.startswith("cd "):
-            target=command[3:]
+        if program_name=="cd":
+            if not args:
+                continue
+
+            target=[0]
             if target=="~":
                 target=os.environ.get("HOME") #change dir to home
                 
@@ -42,8 +48,10 @@ def main():
 
 
 
-        if command.startswith("type "):
-            target=command[5:]
+        if program_name=="type":
+            if not args:
+                continue
+            target=args[0]
             if target in["echo","exit","type","pwd","cd"]:
                 print(f"{target} is a shell builtin")
             else:
@@ -55,12 +63,7 @@ def main():
             continue   
 
         
-        command_parts=command.split()
-        if not command_parts:
-            continue
-        program_name=command_parts[0]
-        args=command_parts[1:]
-
+        
         path=shutil.which(program_name)
 
         if path:
