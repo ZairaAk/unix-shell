@@ -21,7 +21,7 @@ def main():
             target=command[3:]
             if target=="~":
                 os.environ.get("HOME")
-
+                continue
             try:
                 os.chdir(target)
 
