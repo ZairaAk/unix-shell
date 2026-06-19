@@ -1,4 +1,4 @@
-import sys,os,shutil
+import sys,os,shutil,subprocess
 
 
 def main():
@@ -6,6 +6,7 @@ def main():
     while True:
         sys.stdout.write("$ ")
         command=input()
+
         if command=="exit":
             break
 
@@ -21,11 +22,26 @@ def main():
             else:
                 path=shutil.which(target)
                 if path:
-                    print(f"{target} is {path}")  
+                    print(f"{target} is {path}") 
                 else:
-                    print(f"{target}: not found")
-        else:    
-            print(f"{command}: command not found")
+                        print(f"{target}: not found")
+                continue             
+        
+        command_parts=command.split()
+        if not command_parts:
+            continue
+        program_name=command_parts[0]
+        args=command_parts[1:]
+
+        path=shutil.which(program_name)
+
+        if path:
+            subprocess.run([program_name]+args)
+        else:
+            print(f"{target}: not found")
+
+        # else:    
+        #     print(f"{command}: command not found")
     pass
 
 
