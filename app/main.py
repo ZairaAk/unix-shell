@@ -1,4 +1,4 @@
-import sys
+import sys,os,shutil
 
 
 def main():
@@ -19,7 +19,11 @@ def main():
             if target in["echo","exit","type"]:
                 print(f"{target} is a shell builtin")
             else:
-                print(f"{target}: not found")  
+                path=shutil.which(target)
+                if path:
+                    print(f"{target}: is {path}")  
+                else:
+                    print("f{target}: not found")
         else:    
             print(f"{command}: command not found")
     pass
