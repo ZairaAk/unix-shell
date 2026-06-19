@@ -23,7 +23,7 @@ def main():
                 if path:
                     print(f"{target} is {path}")  
                 else:
-                    print("f{target}: not found")
+                    print(f"{target}: not found")
         else:    
             print(f"{command}: command not found")
     pass
