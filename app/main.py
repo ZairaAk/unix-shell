@@ -20,8 +20,8 @@ def main():
         if command.startswith("cd "):
             target=command[3:]
             if target=="~":
-                os.environ.get("HOME")
-                continue
+                target=os.environ.get("HOME") #change dir to home
+                
             try:
                 os.chdir(target)
 
