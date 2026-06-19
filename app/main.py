@@ -35,7 +35,7 @@ def main():
             if not args:
                 continue
 
-            target=[0]
+            target=args[0]
             if target=="~":
                 target=os.environ.get("HOME") #change dir to home
                 
