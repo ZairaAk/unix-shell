@@ -22,7 +22,7 @@ def main():
                 print(f"{target}: not found")  
 
 
-        print(f"{command}: command not found")
+        #print(f"{command}: command not found")
     pass
 
 
