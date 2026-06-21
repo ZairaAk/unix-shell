@@ -6,25 +6,11 @@ import shlex
 
 
 def get_job_marker(job, jobs_list):
-    """
-    Determine the +/- marker for a job, bash-style:
-    - '+' marks the current job: the most recently started job that is
-      still in the table (Running or about to be reported Done).
-    - '-' marks the previous job: the next-most-recent one after current.
-    - Older jobs get a blank space instead of +/-.
-    Order is based on the order jobs were added (insertion order in
-    jobs_list reflects job id assignment order here).
-    """
     if not jobs_list:
         return " "
-
-    # Most recently added job is the last one with the highest id among
-    # those still present - we use list order since jobs_list is built
-    # in the order jobs were started, and ids are reused only after removal.
-    ordered = jobs_list  # already in insertion order
+    ordered = jobs_list
     current = ordered[-1]
     previous = ordered[-2] if len(ordered) >= 2 else None
-
     if job["id"] == current["id"]:
         return "+"
     elif previous is not None and job["id"] == previous["id"]:
@@ -33,10 +19,37 @@ def get_job_marker(job, jobs_list):
         return " "
 
 
+def format_job_line(job, marker, trailing_amp):
+    status_str = job["status"].ljust(21) if marker == "+" else job["status"].ljust(24)
+    suffix = " &" if trailing_amp else ""
+    return f"[{job['id']}]{marker}  {status_str}{job['command']}{suffix}"
+
+
+def reap_and_announce(jobs_list):
+    still_running = []
+    finished = []
+    for job in jobs_list:
+        if job["status"] == "Running":
+            if job["process"].poll() is not None:
+                job["status"] = "Done"
+        if job["status"] == "Done":
+            finished.append(job)
+        else:
+            still_running.append(job)
+
+    for job in finished:
+        marker = get_job_marker(job, jobs_list)
+        print(format_job_line(job, marker, trailing_amp=False))
+
+    return still_running
+
+
 def main():
     jobs_list = []
 
     while True:
+        jobs_list = reap_and_announce(jobs_list)
+
         sys.stdout.write("$ ")
         sys.stdout.flush()
         command = input()
@@ -67,19 +80,16 @@ def main():
             stderr_file = command_parts[idx + 1]
             command_parts = command_parts[:idx]
             append_stderr = True
-
         elif ">>" in command_parts or "1>>" in command_parts:
             operator = ">>" if ">>" in command_parts else "1>>"
             idx = command_parts.index(operator)
             stdout_file = command_parts[idx + 1]
             command_parts = command_parts[:idx]
             append_stdout = True
-
         elif "2>" in command_parts:
             idx = command_parts.index("2>")
             stderr_file = command_parts[idx + 1]
             command_parts = command_parts[:idx]
-
         elif ">" in command_parts or "1>" in command_parts:
             operator = ">" if ">" in command_parts else "1>"
             idx = command_parts.index(operator)
@@ -96,38 +106,10 @@ def main():
             break
 
         if program_name == "jobs":
-            # Reap completed jobs *at the moment jobs is called*:
-            # 1. poll() each running job without blocking
-            # 2. print Done entries (no trailing &) for any that finished
-            # 3. print Running entries (with trailing &) for any still going
-            # 4. remove Done jobs from the table so they never show again
-            #
-            # Markers (+/-/space) are computed against the table as it
-            # stood BEFORE removals for this call, so a job being reported
-            # Done this round still gets its correct marker on its last
-            # appearance.
-            still_running = []
+            jobs_list = reap_and_announce(jobs_list)
             for job in jobs_list:
-                if job["status"] == "Running":
-                    poll_result = job["process"].poll()
-                    if poll_result is not None:
-                        job["status"] = "Done"
-
                 marker = get_job_marker(job, jobs_list)
-
-                if marker == "+":
-                    status_str = job["status"].ljust(21)
-                else:
-                    status_str = job["status"].ljust(24)
-
-                if job["status"] == "Done":
-                    print(f"[{job['id']}]{marker}  {status_str}{job['command']}")
-                    # do not keep this job - it gets reaped (removed) now
-                else:
-                    print(f"[{job['id']}]{marker}  {status_str}{job['command']} &")
-                    still_running.append(job)
-
-            jobs_list = still_running
+                print(format_job_line(job, marker, trailing_amp=True))
             continue
 
         if program_name == "echo":
@@ -181,39 +163,23 @@ def main():
         path = shutil.which(program_name)
 
         if path:
-            f_out = (
-                open(stdout_file, "a" if append_stdout else "w")
-                if stdout_file
-                else None
-            )
-            f_err = (
-                open(stderr_file, "a" if append_stderr else "w")
-                if stderr_file
-                else None
-            )
-
+            f_out = open(stdout_file, "a" if append_stdout else "w") if stdout_file else None
+            f_err = open(stderr_file, "a" if append_stderr else "w") if stderr_file else None
             try:
                 if is_background:
-                    p = subprocess.Popen(
-                        [program_name] + args, stdout=f_out, stderr=f_err
-                    )
-
+                    p = subprocess.Popen([program_name] + args, stdout=f_out, stderr=f_err)
                     existing_ids = {j["id"] for j in jobs_list}
                     next_id = 1
                     while next_id in existing_ids:
                         next_id += 1
-
                     raw_cmd = f"{program_name} " + " ".join(args)
                     print(f"[{next_id}] {p.pid}")
-
-                    jobs_list.append(
-                        {
-                            "id": next_id,
-                            "process": p,
-                            "command": raw_cmd.strip(),
-                            "status": "Running",
-                        }
-                    )
+                    jobs_list.append({
+                        "id": next_id,
+                        "process": p,
+                        "command": raw_cmd.strip(),
+                        "status": "Running",
+                    })
                 else:
                     subprocess.run([program_name] + args, stdout=f_out, stderr=f_err)
             finally:
