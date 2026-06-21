@@ -17,9 +17,9 @@ def main():
 
         redirect_file=None
 
-        if ">" or "1>" in command_parts:
-            operator = ">" if ">" in args else "1>"
-            idx=command_parts.index("operator")
+        if ">" in command_parts or "1>" in command_parts:
+            operator = ">" if ">" in command_parts else "1>"
+            idx=command_parts.index(operator)
 
             redirect_file=command_parts[idx+1]
             command_parts=command_parts[:idx]
