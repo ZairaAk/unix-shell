@@ -15,10 +15,18 @@ def main():
                 if poll_result is not None:
                     job["status"] = "Done"
 
+        running_jobs = [j for j in jobs_list if j["status"] == "Running"]
+
         for job in jobs_list:
             if job["status"] == "Done" and not job["printed_done"]:
+                marker = " "
+                if running_jobs:
+                    if job == running_jobs[-1]:
+                        marker = "+"
+                    elif len(running_jobs) > 1 and job == running_jobs[-2]:
+                        marker = "-"
                 status_str = f"{job['status']}".ljust(24)
-                print(f"[{job['id']}]+  {status_str}{job['command']} &")
+                print(f"[{job['id']}]{marker}  {status_str}{job['command']} &")
                 job["printed_done"] = True
 
         jobs_list = [
@@ -91,11 +99,18 @@ def main():
                 except ValueError:
                     pass
 
+            current_running = [j for j in jobs_list if j["status"] == "Running"]
             for job in jobs_list:
                 if target_job_id is not None and job["id"] != target_job_id:
                     continue
+                marker = " "
+                if job["status"] == "Running":
+                    if job == current_running[-1]:
+                        marker = "+"
+                    elif len(current_running) > 1 and job == current_running[-2]:
+                        marker = "-"
                 status_str = f"{job['status']}".ljust(24)
-                print(f"[{job['id']}]+  {status_str}{job['command']} &")
+                print(f"[{job['id']}]{marker}  {status_str}{job['command']} &")
             continue
 
         if program_name == "echo":
