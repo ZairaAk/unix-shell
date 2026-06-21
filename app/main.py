@@ -17,8 +17,16 @@ def main():
 
         stdout_file=None
         stderr_file=None
+        append_stdout= False
 
-        if "2>" in command_parts:
+        if ">>" in command_parts:
+            idx = command_parts.index(">>")
+            stdout_file = command_parts[idx + 1]
+            command_parts = command_parts[:idx]
+            append_stdout = True
+
+
+        elif "2>" in command_parts:
             idx = command_parts.index("2>")
             stderr_file = command_parts[idx + 1]
             command_parts = command_parts[:idx]
@@ -48,8 +56,11 @@ def main():
             output=" ".join(args)
 
             if stdout_file:
-                with open(stdout_file,"w") as f:
+                mode = "a" if append_stdout else "w"
+
+                with open(stdout_file, mode) as f:
                     f.write(output + "\n")
+
             else:
                 print(output)  
 
@@ -63,7 +74,8 @@ def main():
         if program_name=="pwd":            
             output=os.getcwd()
             if stdout_file:
-                with open(stdout_file, "w") as f:
+               mode = "a" if append_stdout else "w"
+               with open(stdout_file, mode) as f:
                     f.write(output + "\n")
             else:
                 print(output)
@@ -110,10 +122,12 @@ def main():
                 with open(stderr_file,"w") as f:
                     subprocess.run([program_name]+args, stderr=f)
             elif stdout_file:
-                with open(stdout_file,"w") as f:
-                    subprocess.run([program_name]+args
-                                   , stdout=f)
+                mode = "a" if append_stdout else "w"
 
+                with open(stdout_file, mode) as f:
+                    subprocess.run(
+                        [program_name] + args,
+                        stdout=f)
             else:
                 subprocess.run([program_name]+args)
         else:
