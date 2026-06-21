@@ -17,7 +17,8 @@ def main():
 
         for job in jobs_list:
             if job["status"] == "Done" and not job["printed_done"]:
-                print(f"[{job['id']}]  Done                    {job['command']}")
+                status_str = f"{job['status']}".ljust(24)
+                print(f"[{job['id']}]+  {status_str}{job['command']} &")
                 job["printed_done"] = True
 
         jobs_list = [
@@ -93,7 +94,8 @@ def main():
             for job in jobs_list:
                 if target_job_id is not None and job["id"] != target_job_id:
                     continue
-                print(f"[{job['id']}]  {job['status']}                 {job['command']}&")
+                status_str = f"{job['status']}".ljust(24)
+                print(f"[{job['id']}]+  {status_str}{job['command']} &")
             continue
 
         if program_name == "echo":
