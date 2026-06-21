@@ -53,6 +53,29 @@ def main():
             is_background = True
             command_parts[-1] = command_parts[-1][:-1]
 
+        if "|" in command_parts:
+            pipe_idx = command_parts.index("|")
+            cmd1_parts = command_parts[:pipe_idx]
+            cmd2_parts = command_parts[pipe_idx + 1:]
+
+            if not cmd1_parts or not cmd2_parts:
+                continue
+
+            path1 = shutil.which(cmd1_parts[0])
+            path2 = shutil.which(cmd2_parts[0])
+
+            if path1 and path2:
+                p1 = subprocess.Popen(cmd1_parts, stdout=subprocess.PIPE)
+                p2 = subprocess.Popen(cmd2_parts, stdin=p1.stdout)
+                p1.stdout.close()
+                p2.communicate()
+            else:
+                if not path1:
+                    print(f"{cmd1_parts[0]}: not found")
+                if not path2:
+                    print(f"{cmd2_parts[0]}: not found")
+            continue
+
         stdout_file = None
         stderr_file = None
         append_stdout = False
