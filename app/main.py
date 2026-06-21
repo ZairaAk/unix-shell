@@ -30,15 +30,14 @@ def main():
 
             stdout_file=command_parts[idx+1]
             command_parts=command_parts[:idx]
-            if not command_parts:
-                continue
 
-            program_name = command_parts[0]
-            args = command_parts[1:]
+        if not command_parts:
+            continue
 
-        else:
-            program_name = command_parts[0]
-            args = command_parts[1:] 
+        program_name = command_parts[0]
+        args = command_parts[1:]
+
+        
 
 
         if program_name=="exit":
@@ -51,10 +50,6 @@ def main():
             if stdout_file:
                 with open(stdout_file,"w") as f:
                     f.write(output + "\n")
-
-            elif stderr_file:
-                with open(stderr_file,"w") as f:
-                    f.write(output + "/n")        
             else:
                 print(output)  
 
@@ -108,7 +103,7 @@ def main():
         if path:
             if stderr_file:
                 with open(stderr_file,"w") as f:
-                    subprocess.run([program_name]+args, f=stderr_file)
+                    subprocess.run([program_name]+args, stderr=f)
             elif stdout_file:
                 with open(stdout_file,"w") as f:
                     subprocess.run([program_name]+args
