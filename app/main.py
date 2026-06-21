@@ -102,7 +102,7 @@ def main():
                     else:
                         marker = "+"
 
-                status_str = f"{job['status']}".ljust(24)
+                status_str = f"{job['status']}".ljust(21)
                 if job["status"] == "Done":
                     print(f"[{job['id']}]{marker}  {status_str}{job['command']}")
                     jobs_to_remove.append(job)
