@@ -15,24 +15,6 @@ def main():
                 if poll_result is not None:
                     job["status"] = "Done"
 
-        running_jobs = [j for j in jobs_list if j["status"] == "Running"]
-
-        for job in jobs_list:
-            if job["status"] == "Done" and not job["printed_done"]:
-                marker = " "
-                if running_jobs:
-                    if job == running_jobs[-1]:
-                        marker = "+"
-                    elif len(running_jobs) > 1 and job == running_jobs[-2]:
-                        marker = "-"
-                status_str = f"{job['status']}".ljust(24)
-                print(f"[{job['id']}]{marker}  {status_str}{job['command']} &")
-                job["printed_done"] = True
-
-        jobs_list = [
-            j for j in jobs_list if not (j["status"] == "Done" and j["printed_done"])
-        ]
-
         sys.stdout.write("$ ")
         sys.stdout.flush()
         command = input()
@@ -100,6 +82,8 @@ def main():
                     pass
 
             current_running = [j for j in jobs_list if j["status"] == "Running"]
+            jobs_to_remove = []
+
             for job in jobs_list:
                 if target_job_id is not None and job["id"] != target_job_id:
                     continue
@@ -109,8 +93,24 @@ def main():
                         marker = "+"
                     elif len(current_running) > 1 and job == current_running[-2]:
                         marker = "-"
+                else:
+                    if current_running:
+                        if job == current_running[-1]:
+                            marker = "+"
+                        elif len(current_running) > 1 and job == current_running[-2]:
+                            marker = "-"
+                    else:
+                        marker = "+"
+
                 status_str = f"{job['status']}".ljust(24)
-                print(f"[{job['id']}]{marker}  {status_str}{job['command']} &")
+                if job["status"] == "Done":
+                    print(f"[{job['id']}]{marker}  {status_str}{job['command']}")
+                    jobs_to_remove.append(job)
+                else:
+                    print(f"[{job['id']}]{marker}  {status_str}{job['command']} &")
+
+            for job in jobs_to_remove:
+                jobs_list.remove(job)
             continue
 
         if program_name == "echo":
