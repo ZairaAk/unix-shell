@@ -19,8 +19,9 @@ def main():
         stderr_file=None
         append_stdout= False
 
-        if ">>" in command_parts:
-            idx = command_parts.index(">>")
+        if ">>" in command_parts or "1>>" in command_parts:
+            operator=">>" if ">>" in command_parts else "1>>"
+            idx = command_parts.index(operator)
             stdout_file = command_parts[idx + 1]
             command_parts = command_parts[:idx]
             append_stdout = True
