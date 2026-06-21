@@ -15,13 +15,20 @@ def main():
         except ValueError:
             continue
 
-        redirect_file=None
+        stdout_file=None
+        stderr_file=None
 
-        if ">" in command_parts or "1>" in command_parts:
+        if "2>" in command_parts:
+            idx = command_parts.index("2>")
+            stderr_file = command_parts[idx + 1]
+            command_parts = command_parts[:idx]
+
+
+        elif ">" in command_parts or "1>" in command_parts:
             operator = ">" if ">" in command_parts else "1>"
             idx=command_parts.index(operator)
 
-            redirect_file=command_parts[idx+1]
+            stdout_file=command_parts[idx+1]
             command_parts=command_parts[:idx]
             if not command_parts:
                 continue
@@ -37,18 +44,30 @@ def main():
         if program_name=="exit":
             break
 
+        #echo doesn't produce an error.    
         if program_name=="echo":
             output=" ".join(args)
 
-            if redirect_file:
-                with open(redirect_file,"w") as f:
+            if stdout_file:
+                with open(stdout_file,"w") as f:
                     f.write(output + "\n")
+
+            elif stderr_file:
+                with open(stderr_file,"w") as f:
+                    f.write(output + "/n")        
             else:
                 print(output)  
 
             continue
+
         if program_name=="pwd":            
-            print(os.getcwd())          
+            output=os.getcwd()
+            if stdout_file:
+                with open(stdout_file, "w") as f:
+                    f.write(output + "\n")
+            else:
+                print(output)
+            
             continue
 
         if program_name=="cd":
@@ -87,8 +106,11 @@ def main():
         path=shutil.which(program_name)
 
         if path:
-            if redirect_file:
-                with open(redirect_file,"w") as f:
+            if stderr_file:
+                with open(stderr_file,"w") as f:
+                    subprocess.run([program_name]+args, f=stderr_file)
+            elif stdout_file:
+                with open(stdout_file,"w") as f:
                     subprocess.run([program_name]+args
                                    , stdout=f)
 
