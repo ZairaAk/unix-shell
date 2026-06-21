@@ -85,6 +85,20 @@ def main():
                 elif prog == "pwd":
                     output = os.getcwd() + "\n"
                     p = subprocess.Popen(["echo", output.strip()], stdin=prev_stdout, stdout=stdout_target, text=True)
+                elif prog == "type":
+                    if args:
+                        target = args[0]
+                        if target in ["echo", "exit", "type", "pwd", "cd", "jobs"]:
+                            output = f"{target} is a shell builtin"
+                        else:
+                            path = shutil.which(target)
+                            if path:
+                                output = f"{target} is {path}"
+                            else:
+                                output = f"{target}: not found"
+                    else:
+                        output = ""
+                    p = subprocess.Popen(["echo", output], stdin=prev_stdout, stdout=stdout_target, text=True)
                 else:
                     path = shutil.which(prog)
                     if path:
