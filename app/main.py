@@ -17,14 +17,23 @@ def main():
 
         stdout_file=None
         stderr_file=None
-        append_stdout= False
+        append_stdout = False
+        append_stderr = False
 
-        if ">>" in command_parts or "1>>" in command_parts:
+    
+
+        if "2>>" in command_parts:
+            idx = command_parts.index("2>>")
+            stderr_file = command_parts[idx + 1]
+            command_parts = command_parts[:idx]
+            append_stderr = True 
+
+        elif ">>" in command_parts or "1>>" in command_parts:
             operator=">>" if ">>" in command_parts else "1>>"
             idx = command_parts.index(operator)
             stdout_file = command_parts[idx + 1]
             command_parts = command_parts[:idx]
-            append_stdout = True
+            append_stdout = True       
 
 
         elif "2>" in command_parts:
@@ -120,8 +129,13 @@ def main():
 
         if path:
             if stderr_file:
-                with open(stderr_file,"w") as f:
-                    subprocess.run([program_name]+args, stderr=f)
+                mode = "a" if append_stderr else "w"
+
+                with open(stderr_file, mode) as f:
+                    subprocess.run(
+                        [program_name] + args,
+                        stderr=f
+                    )
             elif stdout_file:
                 mode = "a" if append_stdout else "w"
 
