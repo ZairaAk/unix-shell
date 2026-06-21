@@ -113,4 +113,116 @@ def main():
                 marker = " "
                 if job == jobs_list[-1]:
                     marker = "+"
-                elif len(jobs_list)
+                elif len(jobs_list) > 1 and job == jobs_list[-2]:
+                    marker = "-"
+
+                status_str = job["status"].ljust(21)
+                if job["status"] == "Done":
+                    print(f"[{job['id']}]{marker}  {status_str}{job['command']}")
+                    jobs_to_remove.append(job)
+                else:
+                    print(f"[{job['id']}]{marker}  {status_str}{job['command']} &")
+
+            for job in jobs_to_remove:
+                jobs_list.remove(job)
+            continue
+
+        if program_name == "echo":
+            output = " ".join(args)
+            if stdout_file:
+                mode = "a" if append_stdout else "w"
+                with open(stdout_file, mode) as f:
+                    f.write(output + "\n")
+            else:
+                print(output)
+            if stderr_file:
+                open(stderr_file, "w").close()
+            continue
+
+        if program_name == "pwd":
+            output = os.getcwd()
+            if stdout_file:
+                mode = "a" if append_stdout else "w"
+                with open(stdout_file, mode) as f:
+                    f.write(output + "\n")
+            else:
+                print(output)
+            continue
+
+        if program_name == "cd":
+            if not args:
+                continue
+            target = args[0]
+            if target == "~":
+                target = os.environ.get("HOME")
+            try:
+                os.chdir(target)
+            except FileNotFoundError:
+                print(f"cd: {target}: No such file or directory")
+            continue
+
+        if program_name == "type":
+            if not args:
+                continue
+            target = args[0]
+            if target in ["echo", "exit", "type", "pwd", "cd", "jobs"]:
+                print(f"{target} is a shell builtin")
+            else:
+                path = shutil.which(target)
+                if path:
+                    print(f"{target} is {path}")
+                else:
+                    print(f"{target}: not found")
+            continue
+
+        path = shutil.which(program_name)
+
+        if path:
+            f_out = (
+                open(stdout_file, "a" if append_stdout else "w")
+                if stdout_file
+                else None
+            )
+            f_err = (
+                open(stderr_file, "a" if append_stderr else "w")
+                if stderr_file
+                else None
+            )
+
+            try:
+                if is_background:
+                    p = subprocess.Popen(
+                        [program_name] + args, stdout=f_out, stderr=f_err
+                    )
+
+                    existing_ids = {j["id"] for j in jobs_list}
+                    next_id = 1
+                    while next_id in existing_ids:
+                        next_id += 1
+
+                    raw_cmd = f"{program_name} " + " ".join(args)
+                    print(f"[{next_id}] {p.pid}")
+
+                    jobs_list.append(
+                        {
+                            "id": next_id,
+                            "process": p,
+                            "command": raw_cmd.strip(),
+                            "status": "Running",
+                            "printed_done": False,
+                        }
+                    )
+                else:
+                    subprocess.run([program_name] + args, stdout=f_out, stderr=f_err)
+            finally:
+                if not is_background:
+                    if f_out:
+                        f_out.close()
+                    if f_err:
+                        f_err.close()
+        else:
+            print(f"{command}: not found")
+
+
+if __name__ == "__main__":
+    main()
