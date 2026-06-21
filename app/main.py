@@ -53,6 +53,11 @@ def main():
             else:
                 print(output)  
 
+            # Create stderr file if 2> was used
+            if stderr_file:
+                open(stderr_file, "w").close()
+    
+
             continue
 
         if program_name=="pwd":            
