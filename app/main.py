@@ -74,40 +74,19 @@ def main():
             break
 
         if program_name == "jobs":
-            target_job_id = None
-            if args:
-                try:
-                    target_job_id = int(args[0])
-                except ValueError:
-                    pass
-
-            current_running = [j for j in jobs_list if j["status"] == "Running"]
             jobs_to_remove = []
-
             for job in jobs_list:
-                if target_job_id is not None and job["id"] != target_job_id:
-                    continue
-                marker = " "
                 if job["status"] == "Running":
-                    if job == current_running[-1]:
-                        marker = "+"
-                    elif len(current_running) > 1 and job == current_running[-2]:
-                        marker = "-"
-                else:
-                    if current_running:
-                        if job == current_running[-1]:
-                            marker = "+"
-                        elif len(current_running) > 1 and job == current_running[-2]:
-                            marker = "-"
-                    else:
-                        marker = "+"
+                    if job["process"].poll() is not None:
+                        job["process"].wait()
+                        job["status"] = "Done"
 
-                status_str = f"{job['status']}".ljust(21)
+                status_str = job["status"].ljust(21)
                 if job["status"] == "Done":
-                    print(f"[{job['id']}]{marker}  {status_str}{job['command']}")
+                    print(f"[{job['id']}]+  {status_str}{job['command']}")
                     jobs_to_remove.append(job)
                 else:
-                    print(f"[{job['id']}]{marker}  {status_str}{job['command']} &")
+                    print(f"[{job['id']}]+  {status_str}{job['command']} &")
 
             for job in jobs_to_remove:
                 jobs_list.remove(job)
