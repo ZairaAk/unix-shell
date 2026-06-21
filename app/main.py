@@ -5,6 +5,34 @@ import subprocess
 import shlex
 
 
+def get_job_marker(job, jobs_list):
+    """
+    Determine the +/- marker for a job, bash-style:
+    - '+' marks the current job: the most recently started job that is
+      still in the table (Running or about to be reported Done).
+    - '-' marks the previous job: the next-most-recent one after current.
+    - Older jobs get a blank space instead of +/-.
+    Order is based on the order jobs were added (insertion order in
+    jobs_list reflects job id assignment order here).
+    """
+    if not jobs_list:
+        return " "
+
+    # Most recently added job is the last one with the highest id among
+    # those still present - we use list order since jobs_list is built
+    # in the order jobs were started, and ids are reused only after removal.
+    ordered = jobs_list  # already in insertion order
+    current = ordered[-1]
+    previous = ordered[-2] if len(ordered) >= 2 else None
+
+    if job["id"] == current["id"]:
+        return "+"
+    elif previous is not None and job["id"] == previous["id"]:
+        return "-"
+    else:
+        return " "
+
+
 def main():
     jobs_list = []
 
@@ -73,6 +101,11 @@ def main():
             # 2. print Done entries (no trailing &) for any that finished
             # 3. print Running entries (with trailing &) for any still going
             # 4. remove Done jobs from the table so they never show again
+            #
+            # Markers (+/-/space) are computed against the table as it
+            # stood BEFORE removals for this call, so a job being reported
+            # Done this round still gets its correct marker on its last
+            # appearance.
             still_running = []
             for job in jobs_list:
                 if job["status"] == "Running":
@@ -80,12 +113,18 @@ def main():
                     if poll_result is not None:
                         job["status"] = "Done"
 
-                status_str = job["status"].ljust(21)
+                marker = get_job_marker(job, jobs_list)
+
+                if marker == "+":
+                    status_str = job["status"].ljust(21)
+                else:
+                    status_str = job["status"].ljust(24)
+
                 if job["status"] == "Done":
-                    print(f"[{job['id']}]+  {status_str}{job['command']}")
+                    print(f"[{job['id']}]{marker}  {status_str}{job['command']}")
                     # do not keep this job - it gets reaped (removed) now
                 else:
-                    print(f"[{job['id']}]+  {status_str}{job['command']} &")
+                    print(f"[{job['id']}]{marker}  {status_str}{job['command']} &")
                     still_running.append(job)
 
             jobs_list = still_running
