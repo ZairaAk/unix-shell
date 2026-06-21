@@ -15,17 +15,37 @@ def main():
         except ValueError:
             continue
 
-        if not command_parts:
-            continue
+        redirect_file=None
 
-        program_name = command_parts[0]
-        args = command_parts[1:]
+        if ">" or "1>" in command_parts:
+            operator = ">" if ">" in args else "1>"
+            idx=command_parts.index("operator")
+
+            redirect_file=command_parts[idx+1]
+            command_parts=command_parts[:idx]
+            if not command_parts:
+                continue
+
+            program_name = command_parts[0]
+            args = command_parts[1:]
+
+        else:
+            program_name = command_parts[0]
+            args = command_parts[1:] 
+
 
         if program_name=="exit":
             break
 
         if program_name=="echo":
-            print(" ".join(args))
+            output=" ".join(args)
+
+            if redirect_file:
+                with open(redirect_file,"w") as f:
+                    f.write(output + "\n")
+            else:
+                print(output)  
+
             continue
         if program_name=="pwd":            
             print(os.getcwd())          
@@ -67,7 +87,13 @@ def main():
         path=shutil.which(program_name)
 
         if path:
-            subprocess.run([program_name]+args)
+            if redirect_file:
+                with open(redirect_file,"w") as f:
+                    subprocess.run([program_name]+args
+                                   , stdout=f)
+
+            else:
+                subprocess.run([program_name]+args)
         else:
             print(f"{command}: not found")
 
