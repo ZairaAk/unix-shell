@@ -1,11 +1,32 @@
-import sys,os,shutil,subprocess,shlex
+import sys
+import os
+import shutil
+import subprocess
+import shlex
 
 
 def main():
+    jobs_list = []
 
     while True:
+        for job in jobs_list:
+            if job["status"] == "Running":
+                poll_result = job["process"].poll()
+                if poll_result is not None:
+                    job["status"] = "Done"
+
+        for job in jobs_list:
+            if job["status"] == "Done" and not job["printed_done"]:
+                print(f"[{job['id']}]  Done                    {job['command']}")
+                job["printed_done"] = True
+
+        jobs_list = [
+            j for j in jobs_list if not (j["status"] == "Done" and j["printed_done"])
+        ]
+
         sys.stdout.write("$ ")
-        command=input()
+        sys.stdout.flush()
+        command = input()
 
         if not command.strip():
             continue
@@ -15,39 +36,42 @@ def main():
         except ValueError:
             continue
 
-        stdout_file=None
-        stderr_file=None
+        is_background = False
+        if command_parts and command_parts[-1] == "&":
+            is_background = True
+            command_parts.pop()
+        elif command_parts and command_parts[-1].endswith("&"):
+            is_background = True
+            command_parts[-1] = command_parts[-1][:-1]
+
+        stdout_file = None
+        stderr_file = None
         append_stdout = False
         append_stderr = False
-
-    
 
         if "2>>" in command_parts:
             idx = command_parts.index("2>>")
             stderr_file = command_parts[idx + 1]
             command_parts = command_parts[:idx]
-            append_stderr = True 
+            append_stderr = True
 
         elif ">>" in command_parts or "1>>" in command_parts:
-            operator=">>" if ">>" in command_parts else "1>>"
+            operator = ">>" if ">>" in command_parts else "1>>"
             idx = command_parts.index(operator)
             stdout_file = command_parts[idx + 1]
             command_parts = command_parts[:idx]
-            append_stdout = True       
-
+            append_stdout = True
 
         elif "2>" in command_parts:
             idx = command_parts.index("2>")
             stderr_file = command_parts[idx + 1]
             command_parts = command_parts[:idx]
 
-
         elif ">" in command_parts or "1>" in command_parts:
             operator = ">" if ">" in command_parts else "1>"
-            idx=command_parts.index(operator)
-
-            stdout_file=command_parts[idx+1]
-            command_parts=command_parts[:idx]
+            idx = command_parts.index(operator)
+            stdout_file = command_parts[idx + 1]
+            command_parts = command_parts[:idx]
 
         if not command_parts:
             continue
@@ -55,106 +79,118 @@ def main():
         program_name = command_parts[0]
         args = command_parts[1:]
 
-        
-
-
-        if program_name=="exit":
+        if program_name == "exit":
             break
 
-        #echo doesn't produce an error.    
-        if program_name=="echo":
-            output=" ".join(args)
+        if program_name == "jobs":
+            target_job_id = None
+            if args:
+                try:
+                    target_job_id = int(args[0])
+                except ValueError:
+                    pass
 
-            if stdout_file:
-                mode = "a" if append_stdout else "w"
-
-                with open(stdout_file, mode) as f:
-                    f.write(output + "\n")
-
-            else:
-                print(output)  
-
-            # Create stderr file if 2> was used
-            if stderr_file:
-                open(stderr_file, "w").close()
-    
-
+            for job in jobs_list:
+                if target_job_id is not None and job["id"] != target_job_id:
+                    continue
+                print(f"[{job['id']}]  {job['status']}                 {job['command']}&")
             continue
 
-        if program_name=="pwd":            
-            output=os.getcwd()
+        if program_name == "echo":
+            output = " ".join(args)
             if stdout_file:
-               mode = "a" if append_stdout else "w"
-               with open(stdout_file, mode) as f:
+                mode = "a" if append_stdout else "w"
+                with open(stdout_file, mode) as f:
                     f.write(output + "\n")
             else:
                 print(output)
-            
+            if stderr_file:
+                open(stderr_file, "w").close()
             continue
 
-        if program_name=="cd":
+        if program_name == "pwd":
+            output = os.getcwd()
+            if stdout_file:
+                mode = "a" if append_stdout else "w"
+                with open(stdout_file, mode) as f:
+                    f.write(output + "\n")
+            else:
+                print(output)
+            continue
+
+        if program_name == "cd":
             if not args:
                 continue
-
-            target=args[0]
-            if target=="~":
-                target=os.environ.get("HOME") #change dir to home
-                
+            target = args[0]
+            if target == "~":
+                target = os.environ.get("HOME")
             try:
                 os.chdir(target)
-
             except FileNotFoundError:
                 print(f"cd: {target}: No such file or directory")
             continue
 
-
-
-        if program_name=="type":
+        if program_name == "type":
             if not args:
                 continue
-            target=args[0]
-            if target in["echo","exit","type","pwd","cd"]:
+            target = args[0]
+            if target in ["echo", "exit", "type", "pwd", "cd", "jobs"]:
                 print(f"{target} is a shell builtin")
             else:
-                path=shutil.which(target)
+                path = shutil.which(target)
                 if path:
-                    print(f"{target} is {path}") 
+                    print(f"{target} is {path}")
                 else:
-                        print(f"{target}: not found")
-            continue   
+                    print(f"{target}: not found")
+            continue
 
-        
-        
-        path=shutil.which(program_name)
+        path = shutil.which(program_name)
 
         if path:
-            if stderr_file:
-                mode = "a" if append_stderr else "w"
+            f_out = (
+                open(stdout_file, "a" if append_stdout else "w")
+                if stdout_file
+                else None
+            )
+            f_err = (
+                open(stderr_file, "a" if append_stderr else "w")
+                if stderr_file
+                else None
+            )
 
-                with open(stderr_file, mode) as f:
-                    subprocess.run(
-                        [program_name] + args,
-                        stderr=f
+            try:
+                if is_background:
+                    p = subprocess.Popen(
+                        [program_name] + args, stdout=f_out, stderr=f_err
                     )
-            elif stdout_file:
-                mode = "a" if append_stdout else "w"
 
-                with open(stdout_file, mode) as f:
-                    subprocess.run(
-                        [program_name] + args,
-                        stdout=f)
-            else:
-                subprocess.run([program_name]+args)
+                    existing_ids = {j["id"] for j in jobs_list}
+                    next_id = 1
+                    while next_id in existing_ids:
+                        next_id += 1
+
+                    raw_cmd = f"{program_name} " + " ".join(args)
+                    print(f"[{next_id}] {p.pid}")
+
+                    jobs_list.append(
+                        {
+                            "id": next_id,
+                            "process": p,
+                            "command": raw_cmd.strip(),
+                            "status": "Running",
+                            "printed_done": False,
+                        }
+                    )
+                else:
+                    subprocess.run([program_name] + args, stdout=f_out, stderr=f_err)
+            finally:
+                if not is_background:
+                    if f_out:
+                        f_out.close()
+                    if f_err:
+                        f_err.close()
         else:
             print(f"{command}: not found")
-
-
-        
-
-
-        # else:    
-        #     print(f"{command}: command not found")
-    pass
 
 
 if __name__ == "__main__":
