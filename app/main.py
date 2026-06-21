@@ -9,12 +9,6 @@ def main():
     jobs_list = []
 
     while True:
-        for job in jobs_list:
-            if job["status"] == "Running":
-                poll_result = job["process"].poll()
-                if poll_result is not None:
-                    job["status"] = "Done"
-
         sys.stdout.write("$ ")
         sys.stdout.flush()
         command = input()
@@ -74,22 +68,27 @@ def main():
             break
 
         if program_name == "jobs":
-            jobs_to_remove = []
+            # Reap completed jobs *at the moment jobs is called*:
+            # 1. poll() each running job without blocking
+            # 2. print Done entries (no trailing &) for any that finished
+            # 3. print Running entries (with trailing &) for any still going
+            # 4. remove Done jobs from the table so they never show again
+            still_running = []
             for job in jobs_list:
                 if job["status"] == "Running":
-                    if job["process"].poll() is not None:
-                        job["process"].wait()
+                    poll_result = job["process"].poll()
+                    if poll_result is not None:
                         job["status"] = "Done"
 
                 status_str = job["status"].ljust(21)
                 if job["status"] == "Done":
                     print(f"[{job['id']}]+  {status_str}{job['command']}")
-                    jobs_to_remove.append(job)
+                    # do not keep this job - it gets reaped (removed) now
                 else:
                     print(f"[{job['id']}]+  {status_str}{job['command']} &")
+                    still_running.append(job)
 
-            for job in jobs_to_remove:
-                jobs_list.remove(job)
+            jobs_list = still_running
             continue
 
         if program_name == "echo":
@@ -174,7 +173,6 @@ def main():
                             "process": p,
                             "command": raw_cmd.strip(),
                             "status": "Running",
-                            "printed_done": False,
                         }
                     )
                 else:
